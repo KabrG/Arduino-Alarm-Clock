@@ -40,12 +40,6 @@ void buttonReads() {
   buttonstate2 = digitalRead(button2);
 }
 
-// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
 void setup() {
   pinMode(button1, INPUT);
   pinMode(button2, INPUT);
@@ -59,7 +53,7 @@ void setup() {
 
   Serial.begin(115200);
   // set notification call-back function
-  sntp_set_time_sync_notification_cb( timeavailable );
+  sntp_set_time_sync_notification_cb(timeavailable);
   sntp_servermode_dhcp(1);    // (optional)
   configTzTime(time_zone, ntpServer1, ntpServer2);
 
@@ -76,11 +70,9 @@ void setup() {
   digitalWrite(button1, LOW);
   digitalWrite(button2, LOW);
   beep();
-
 }
-// ---------------------------------------------------------------------------------------------
-void printLocalTime()
-{
+// -----------------------------------------------------------------------------------------------------------------------------------
+void printLocalTime() {
   struct tm timeinfo; // Empty Structure
   if (!getLocalTime(&timeinfo)) {
     Serial.println("No time available (yet)");
@@ -110,28 +102,19 @@ void printLocalTime()
       display.print("A:" + String(globAlarmHour) + ":" + String(globAlarmMin));
     }
   }
-
+  
+  // If a certain button is clicked, the alarm menu will show up
+  buttonReads();
+  
   // Gets current hour and minute
   int hour = timeinfo.tm_hour;
   int minute = timeinfo.tm_min;
-
-  // If a certain button is clicked, the alarm menu will show up
-  buttonReads();
-  // Testing if Buttons work
-  //    if (buttonstate2 == HIGH) {
-  //    Serial.println("Button 2 pressed!");
-  //    delay(500);  // Add a small delay for debounce
-  //  }
-  //  // Check if the button is pressed (active HIGH)
-  //  if (buttonstate1 == HIGH) {
-  //    Serial.println("Button 1 pressed!");
-  //    delay(500);  // Add a small delay for debounce
-  //  }
+  
   if (buttonstate1 == HIGH) setAlarm();
   alarm(minute, hour);
-
+  
 }
-// ---------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------------------------------------------
 
 void oledDisplay(String msg, int fontSize = 1) {
   // Clear the display
@@ -191,6 +174,7 @@ void setAlarm() {
   beep();
   delay(1000);
 
+  // Clear Alarm
   while (1) {
     oledDisplay("Hour: " + String(lhour) + "\nMinute: " + String(lmin) + "\n|Clear Alarm|");
     buttonReads();
@@ -213,21 +197,23 @@ void setAlarm() {
   Serial.print(globAlarmHour);
 }
 
-void alarm(int cmin, int chour) {
+void alarm(int &cmin, int &chour) {
   Serial.println("Alarm function");
   if (cmin == globAlarmMin && chour == globAlarmHour) {
-    while(1){
+    bool off = false;
+    while(!off){
+      buttonReads();
       if (buttonstate2 == HIGH || buttonstate1 == HIGH) {
         globAlarmMin = -1;
-        globAlarmMin = -1;
-        Serial.print("BREAK FUNCTION");
-        break;
-      }
+        globAlarmHour = -1;
+        Serial.println("BREAK FUNCTION");
+        tone(14, 1000, 500);
+        off = true;
+        }
       beep();
       delay(200);
     }
   }
-
 }
 
 // Callback function (get's called when time adjusts via NTP)
@@ -243,9 +229,10 @@ void beep() {
   }
 }
 
-
 void loop() {
   //  displayTime();
   printLocalTime();
   display.display();
+  delay(20);
+  
 }
